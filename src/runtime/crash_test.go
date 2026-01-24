@@ -1270,19 +1270,26 @@ func TestVirtualAllocFailure(t *testing.T) {
 		t.Skip("skipping windows only test")
 	}
 
-	if mode := os.Getenv("GO_TEST_VIRTUALALLOC_FAIL"); mode != "" {
-		// Big enough to fail (192TB)
-		size := uintptr(3 << 46)
+	// Allocate a size that is guaranteed to fail VirtualAlloc on Windows
+	// immediately, without trying to expand the pagefile.
+	// https://learn.microsoft.com/en-us/windows/win32/memory/memory-limits-for-windows-releases
+	var size uintptr
+	if unsafe.Sizeof(int(0)) == 8 {
+		// On 64-bit Windows, the user address space is 128 TB.
+		size = 3 << 46 // 192 TB
+	} else {
+		// On 32-bit Windows, the user address space is 2 GB.
+		size = 1<<31 - 1 // ~2 GB
+	}
 
+	if mode := os.Getenv("GO_TEST_VIRTUALALLOC_FAIL"); mode != "" {
 		switch mode {
 		case "alloc":
 			runtime.SysAllocOS(size)
 		case "reserve":
 			runtime.SysReserveOS(nil, size)
 		case "used":
-			// We pass an invalid address (1) to force the commit to fail.
-			// sysUsedOS calls VirtualAlloc with MEM_COMMIT.
-			runtime.SysUsedOS(unsafe.Pointer(uintptr(1)), size)
+			runtime.SysUsedOS(unsafe.Pointer(&size), size)
 		}
 		println("did not crash")
 		os.Exit(0)
@@ -1313,20 +1320,17 @@ func TestVirtualAllocFailure(t *testing.T) {
 
 			output := string(out)
 
-			// We expect the standard VirtualAlloc failure message for all 3 cases.
-			mustContain := []string{
-				"runtime: VirtualAlloc of ",
-				" bytes failed with errno=",
-				": cannot allocate ",
-				"-byte block (",
-				" in use)",
-				"foo",
+			want := fmt.Sprintf(`runtime: VirtualAlloc of %d bytes failed with errno=\d+: cannot allocate %d-byte block \(\d+ in use\)\n`, size, size)
+
+			// SysUsedOS throws a different fatal error than the others.
+			if tt.mode == "used" {
+				want += "fatal error: runtime: failed to commit pages"
+			} else {
+				want += "fatal error: out of memory"
 			}
 
-			for _, s := range mustContain {
-				if !strings.Contains(output, s) {
-					t.Errorf("output missing expected substring %q\nGot:\n%s", s, output)
-				}
+			if matched, err := regexp.MatchString(want, output); err != nil || !matched {
+				t.Fatalf("output does not match expected pattern.\n\nWant:\n%s\n\nGot:\n%s", want, output)
 			}
 		})
 	}
