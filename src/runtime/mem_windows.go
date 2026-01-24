@@ -85,11 +85,12 @@ func sysUsedOS(v unsafe.Pointer, n uintptr) {
 		if small < 4096 {
 			errno := getlasterror()
 			inUse := gcController.heapFree.load() + gcController.heapReleased.load() + gcController.heapInUse.load()
-			print("runtime: VirtualAlloc of ", n, " bytes failed with errno=", errno, ": cannot allocate ", n, "-byte block (", inUse, " in use)\n")
 			switch errno {
 			case _ERROR_NOT_ENOUGH_MEMORY, _ERROR_COMMITMENT_LIMIT:
+				print("runtime: VirtualAlloc of ", n, " bytes failed with errno=", errno, ": cannot allocate ", n, "-byte block (", inUse, " in use)\n")
 				throw("out of memory")
 			default:
+				print("runtime: VirtualAlloc of ", small, " bytes failed with errno=", errno, ": cannot allocate ", small, "-byte block (", inUse, " in use)\n")
 				throw("runtime: failed to commit pages")
 			}
 		}
