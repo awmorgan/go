@@ -1322,7 +1322,6 @@ func TestVirtualAllocFailure(t *testing.T) {
 
 			want := fmt.Sprintf(`runtime: VirtualAlloc of %d bytes failed with errno=\d+: cannot allocate %d-byte block \(\d+ in use\)\n`, size, size)
 
-			// SysUsedOS throws a different fatal error than the others.
 			if tt.mode == "used" {
 				want += "fatal error: runtime: failed to commit pages"
 			} else {
