@@ -28,6 +28,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unsafe"
 )
 
 var toRemove []string
@@ -1264,17 +1265,69 @@ func TestSynctestCondSignalFromNoBubble(t *testing.T) {
 	}
 }
 
-func TestSysAllocOSFailure(t *testing.T) {
+func TestVirtualAllocFailure(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("skipping windows only test")
 	}
 
-	output := runTestProg(t, "testprog", "TestSysAllocOSFailure")
+	if mode := os.Getenv("GO_TEST_VIRTUALALLOC_FAIL"); mode != "" {
+		// Big enough to fail (192TB)
+		size := uintptr(3 << 46)
 
-	// Expect output to contain the detailed error message.
-	want := "runtime: VirtualAlloc of 211106236727296 bytes failed with errno=87: cannot allocate 211106236727296-byte block (4096000 in use)"
+		switch mode {
+		case "alloc":
+			runtime.SysAllocOS(size)
+		case "reserve":
+			runtime.SysReserveOS(nil, size)
+		case "used":
+			// We pass an invalid address (1) to force the commit to fail.
+			// sysUsedOS calls VirtualAlloc with MEM_COMMIT.
+			runtime.SysUsedOS(unsafe.Pointer(uintptr(1)), size)
+		}
+		println("did not crash")
+		os.Exit(0)
+	}
 
-	if output != want {
-		t.Fatalf("output:\n%s\n\nwant output containing: %s", output, want)
+	tests := []struct {
+		name string
+		mode string
+	}{
+		{"SysAllocOS", "alloc"},
+		{"SysReserveOS", "reserve"},
+		{"SysUsedOS", "used"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exe, err := os.Executable()
+			if err != nil {
+				t.Fatal(err)
+			}
+			cmd := exec.Command(exe, "-test.run=TestVirtualAllocFailure")
+			cmd.Env = append(os.Environ(), "GO_TEST_VIRTUALALLOC_FAIL="+tt.mode)
+
+			out, err := cmd.CombinedOutput()
+			if err == nil {
+				t.Fatalf("expected crash, got success. Output:\n%s", out)
+			}
+
+			output := string(out)
+
+			// We expect the standard VirtualAlloc failure message for all 3 cases.
+			mustContain := []string{
+				"runtime: VirtualAlloc of ",
+				" bytes failed with errno=",
+				": cannot allocate ",
+				"-byte block (",
+				" in use)",
+				"foo",
+			}
+
+			for _, s := range mustContain {
+				if !strings.Contains(output, s) {
+					t.Errorf("output missing expected substring %q\nGot:\n%s", s, output)
+				}
+			}
+		})
 	}
 }
