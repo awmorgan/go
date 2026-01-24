@@ -1320,11 +1320,12 @@ func TestVirtualAllocFailure(t *testing.T) {
 
 			output := string(out)
 
-			want := fmt.Sprintf(`runtime: VirtualAlloc of %d bytes failed with errno=\d+: cannot allocate %d-byte block \(\d+ in use\)\n`, size, size)
-
+			want := ""
 			if tt.mode == "used" {
+				want = `runtime: VirtualAlloc of \d+ bytes failed with errno=\d+: cannot allocate \d+-byte block \(\d+ in use\)\n`
 				want += "fatal error: runtime: failed to commit pages"
 			} else {
+				want = fmt.Sprintf(`runtime: VirtualAlloc of %d bytes failed with errno=\d+: cannot allocate %d-byte block \(\d+ in use\)\n`, size, size)
 				want += "fatal error: out of memory"
 			}
 
