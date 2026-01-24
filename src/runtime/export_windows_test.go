@@ -26,14 +26,14 @@ func GetCallerFp() uintptr {
 	return getcallerfp()
 }
 
-func SysAllocOS(n uint64) unsafe.Pointer {
-	return sysAllocOS(uintptr(n), "")
+func SysAllocOS(n uintptr) unsafe.Pointer {
+	return sysAllocOS(n, "")
 }
 
-func SysUsedOS(v unsafe.Pointer, n uint64) {
-	sysUsedOS(v, uintptr(n))
+func SysUsedOS(v unsafe.Pointer, n uintptr) {
+	sysUsedOS(v, n)
 }
 
-func SysReserveOS(v unsafe.Pointer, n uint64) unsafe.Pointer {
-	return sysReserveOS(v, uintptr(n), "")
+func SysReserveOS(v unsafe.Pointer, n uintptr) unsafe.Pointer {
+	return sysReserveOS(v, n, "")
 }
