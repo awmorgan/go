@@ -1273,7 +1273,7 @@ func TestVirtualAllocFailure(t *testing.T) {
 	// Allocate a size that is guaranteed to fail VirtualAlloc on Windows
 	// immediately, without trying to expand the pagefile.
 	// https://learn.microsoft.com/en-us/windows/win32/memory/memory-limits-for-windows-releases
-	var size int64
+	var size uint64
 	if unsafe.Sizeof(int(0)) == 8 {
 		// On 64-bit Windows, the user address space is 128 TB.
 		size = 3 << 46 // 192 TB
@@ -1285,11 +1285,11 @@ func TestVirtualAllocFailure(t *testing.T) {
 	if mode := os.Getenv("GO_TEST_VIRTUALALLOC_FAIL"); mode != "" {
 		switch mode {
 		case "alloc":
-			runtime.SysAllocOS(uintptr(size))
+			runtime.SysAllocOS(size)
 		case "reserve":
-			runtime.SysReserveOS(nil, uintptr(size))
+			runtime.SysReserveOS(nil, size)
 		case "used":
-			runtime.SysUsedOS(unsafe.Pointer(&size), uintptr(size))
+			runtime.SysUsedOS(unsafe.Pointer(&size), size)
 		}
 		println("did not crash")
 		os.Exit(0)
