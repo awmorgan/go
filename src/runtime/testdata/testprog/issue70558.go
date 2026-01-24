@@ -4,13 +4,16 @@
 
 package main
 
-import "unsafe"
+import (
+	"runtime"
+	"unsafe"
+)
 
 func init() {
-	register("VirtualAllocFailure", VirtualAllocFailure)
+	register("SysAllocOSFailure", SysAllocOSFailure)
 }
 
-func VirtualAllocFailure() {
+func SysAllocOSFailure() {
 	// Allocate a size that is guaranteed to fail VirtualAlloc on Windows
 	// immediately, without trying to expand the pagefile.
 	// https://learn.microsoft.com/en-us/windows/win32/memory/memory-limits-for-windows-releases
@@ -23,6 +26,5 @@ func VirtualAllocFailure() {
 		size = 1<<31 - 1 // ~2 GB
 	}
 
-	b := make([]byte, size)
-	println(b[0])
+	runtime.SysAllocOS(size)
 }

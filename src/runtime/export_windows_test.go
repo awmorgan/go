@@ -25,3 +25,15 @@ func NumberOfProcessors() int32 {
 func GetCallerFp() uintptr {
 	return getcallerfp()
 }
+
+func SysAllocOS(n uintptr) unsafe.Pointer {
+	return sysAllocOS(n, "")
+}
+
+func SysUnusedOS(v unsafe.Pointer, n uintptr) {
+	sysUnusedOS(v, n)
+}
+
+func SysReserveOS(v unsafe.Pointer, n uintptr) unsafe.Pointer {
+	return sysReserveOS(v, n, "")
+}

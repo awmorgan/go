@@ -31,7 +31,7 @@ func sysAllocOS(n uintptr, _ string) unsafe.Pointer {
 		errno := getlasterror()
 		inUse := gcController.heapFree.load() + gcController.heapReleased.load() + gcController.heapInUse.load()
 		print("runtime: VirtualAlloc of ", n, " bytes failed with errno=", errno, ": cannot allocate ", n, "-byte block (", inUse, " in use)\n")
-		return nil
+		throw("out of memory")
 	}
 	return unsafe.Pointer(p)
 }
@@ -139,7 +139,7 @@ func sysReserveOS(v unsafe.Pointer, n uintptr, _ string) unsafe.Pointer {
 		errno := getlasterror()
 		inUse := gcController.heapFree.load() + gcController.heapReleased.load() + gcController.heapInUse.load()
 		print("runtime: VirtualAlloc of ", n, " bytes failed with errno=", errno, ": cannot allocate ", n, "-byte block (", inUse, " in use)\n")
-		return nil
+		throw("out of memory")
 	}
 	return unsafe.Pointer(p)
 }

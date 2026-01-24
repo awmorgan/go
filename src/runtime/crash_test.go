@@ -1264,17 +1264,17 @@ func TestSynctestCondSignalFromNoBubble(t *testing.T) {
 	}
 }
 
-func TestVirtualAllocFailure(t *testing.T) {
+func TestSysAllocOSFailure(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("skipping windows only test")
 	}
 
-	output := runTestProg(t, "testprog", "VirtualAllocFailure")
+	output := runTestProg(t, "testprog", "TestSysAllocOSFailure")
 
 	// Expect output to contain the detailed error message.
-	want := `runtime: VirtualAlloc of [0-9]+ bytes failed with errno=[0-9]+: cannot allocate [0-9]+-byte block \([0-9]+ in use\)`
+	want := "runtime: VirtualAlloc of 211106236727296 bytes failed with errno=87: cannot allocate 211106236727296-byte block (4096000 in use)"
 
-	if !regexp.MustCompile(want).MatchString(output) {
-		t.Fatalf("output does not match regex %q\n\ngot:\n%s", want, output)
+	if output != want {
+		t.Fatalf("output:\n%s\n\nwant output containing: %s", output, want)
 	}
 }
